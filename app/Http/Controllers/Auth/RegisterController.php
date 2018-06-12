@@ -2,42 +2,45 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\User;
+use App\Mail\Auth\VerifyMail;
+use App\Entity\User;
 use App\Http\Controllers\Controller;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Foundation\Auth\RegistersUsers;
 
 class RegisterController extends Controller
 {
-    /*
-    |--------------------------------------------------------------------------
-    | Register Controller
-    |--------------------------------------------------------------------------
-    |
-    | This controller handles the registration of new users as well as their
-    | validation and creation. By default this controller uses a trait to
-    | provide this functionality without requiring any additional code.
-    |
-    */
+    //use RegistersUsers;
 
-    use RegistersUsers;
+    //protected $redirectTo = '/home';
+    protected $redirectTo = '/cabinet';
 
-    /**
-     * Where to redirect users after registration.
-     *
-     * @var string
-     */
-    protected $redirectTo = '/home';
-
-    /**
-     * Create a new controller instance.
-     *
-     * @return void
-     */
     public function __construct()
     {
         $this->middleware('guest');
+    }
+
+    public function verify($token)
+    {
+        if (!$user = User::where('verify_code', $token)->first()) {
+            return redirect()->route('login')
+                ->with('error', 'Sorry your link cannot be verified');
+        }
+
+        if ($user->status !== User::STATUS_WAIT) {
+            return redirect()->route('login')
+                ->with('error', 'Your e-mail is already verified.');
+        }
+
+        $user->status = User::STATUS_ACTIVE;
+        $user->verify_code = null;
+        $user->save();
+
+        return redirect()->route('login')
+            ->with('success', 'Your e-mail is verified. You can login now.');
+
     }
 
     /**
@@ -59,14 +62,36 @@ class RegisterController extends Controller
      * Create a new user instance after a valid registration.
      *
      * @param  array  $data
-     * @return \App\User
+     * @return \App\Entity\User
      */
     protected function create(array $data)
     {
-        return User::create([
+        $user =  User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
+            'verify_token' => Str::uuid(),
+            'status' => User::STATUS_WAIT,
         ]);
+
+        Mail::to($user->email)->send(new VerifyMail($user));
+        event(new Registered($user));
+
+        return $user;
+    }
+
+    /**
+     * The user has been registered.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  mixed  $user
+     * @return mixed
+     */
+    protected function registered(Request $request, $user)
+    {
+        $this->guard()->logout();
+
+        return redirect()->route('login')
+            ->with('success', 'Check your email and click on the verification link');
     }
 }
