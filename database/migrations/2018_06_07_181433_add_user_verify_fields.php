@@ -15,7 +15,7 @@ class AddUserVerifyFields extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->string('status', 16);
-            $table->string('verify_code')->nullable()->unique();
+            $table->string('verify_token')->nullable()->unique();
         });
     }
 
@@ -27,7 +27,7 @@ class AddUserVerifyFields extends Migration
     public function down()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['status', 'verify_code']);
+            $table->dropColumn(['status', 'verify_token']);
         });
     }
 }
