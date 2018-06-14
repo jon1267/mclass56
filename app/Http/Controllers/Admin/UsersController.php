@@ -15,6 +15,8 @@ class UsersController extends Controller
     public function __construct(RegisterService $register)
     {
         $this->register = $register;
+        //если сделать разрешение users-manage то так даем разрешение на упр.полз.
+        //$this->middleware('can:users-manage');
     }
 
     public function index()
