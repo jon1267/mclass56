@@ -3,12 +3,19 @@
 namespace Tests\Unit\Entity\User;
 
 use App\Entity\User;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 //use Illuminate\Foundation\Testing\WithFaker;
 //use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class RegisterTest extends TestCase
 {
+    /*
+     * трэйт токо для юнит тестов. по окончании теста состояние
+     * бд откатывается к начальн., тестовый мусор в бд не собирается
+     */
+    use DatabaseTransactions;
+
     public function testRequest(): void
     {
         $user = User::register(
@@ -16,7 +23,6 @@ class RegisterTest extends TestCase
             $email = 'email',
             $password = 'password'
         );
-
         //$this->assertTrue(true);
         self::assertNotEmpty($user);
 
@@ -28,6 +34,7 @@ class RegisterTest extends TestCase
 
         self::assertTrue($user->isWait());
         self::assertFalse($user->isActive());
+        self::assertFalse($user->isAdmin());
     }
 
     public function testVerify(): void
