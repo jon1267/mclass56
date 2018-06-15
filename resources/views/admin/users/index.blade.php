@@ -5,6 +5,8 @@
 
     <p><a href="{{ route('admin.users.create') }}" class="btn btn-success">Add User</a></p>
 
+    @include('admin.users.search_form')
+
     <table class="table table-bordered table-striped">
         <thead>
         <tr>

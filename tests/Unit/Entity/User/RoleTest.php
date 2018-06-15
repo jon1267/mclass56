@@ -16,7 +16,8 @@ class RoleTest extends TestCase
     {
         $user = factory(User::class)->create(['role' => User::ROLE_USER]);
 
-        self::assertFalse($user->isAdmin());
+        //self::assertFalse($user->isAdmin());//или self:: или $this-> безр.
+        $this->assertFalse($user->isAdmin());
 
         $user->changeRole(User::ROLE_ADMIN);
 
