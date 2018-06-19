@@ -82,7 +82,7 @@ class User extends Authenticatable
     {
         if (! \in_array($role, [self::ROLE_USER, self::ROLE_ADMIN], true)) {
             throw new \InvalidArgumentException('Undefined role "' . $role . '"');
-            //throw new \DomainException('Undefined role "' . $role . '"');//тоже работает, но меньше текста...
+            //throw new \DomainException('Undefined role "' . $role . '"');//тоже работает, но меньше текста, это + ...
         }
         if ($this->role === $role) {
             throw new \DomainException('Role is already assigned.');
