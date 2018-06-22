@@ -3,88 +3,75 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Entity\Region;
-use App\Http\Requests\Admin\Users\CreateRequest;
-use App\Http\Requests\Admin\Users\UpdateRequest;
 use App\Http\Controllers\Controller;
-use App\UseCases\Auth\RegisterService;
 use Illuminate\Http\Request;
 
 class RegionsController extends Controller
 {
-    private $register;
-
-    public function __construct(RegisterService $register)
-    {
-        $this->register = $register;
-        //если сделать разрешение users-manage то так даем разрешение на упр.полз.
-        //$this->middleware('can:users-manage');
-    }
-
     public function index()
     {
-        $regions = User::orderByDesc('id')->paginate(20);
+        $regions = Region::where('parent_id', null)->orderBy('name')->get();
 
 
-        return view('admin.users.index', compact('regions'));
+        return view('admin.regions.index', compact('regions'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        return view('admin.users.create');
-    }
-
-    public function store(CreateRequest $request)
-    {
-        $user = User::new(
-            $request['name'],
-            $request['email']
-        );
-
-        return redirect()->route('admin.users.show', $user);
-    }
-
-    public function show(User $user)
-    {
-        return view('admin.users.show', compact('user'));
-    }
-
-    public function edit(User $user)
-    {
-        $statuses = [
-            User::STATUS_WAIT => 'Waiting',
-            User::STATUS_ACTIVE => 'Active',
-        ];
-
-        $roles = [
-            User::ROLE_USER => 'User',
-            User::ROLE_ADMIN => 'Admin',
-        ];
-
-        return view('admin.users.edit', compact('user', 'statuses', 'roles'));
-    }
-
-    public function update(UpdateRequest $request, User $user)
-    {
-        $user->update($request->only(['name', 'email']));
-
-        if ($request['role'] !== $user->role) {
-            $user->changeRole($request['role']);
+        $parent = null;
+        if($request->get('parent')) {
+            $parent = Region::findOrFail($request->get('parent'));
         }
-
-        return redirect()->route('admin.users.show', $user);
+        return view('admin.regions.create', compact('parent'));
     }
 
-    public function destroy(User $user)
+    public function store(Request $request)
     {
-        $user->delete();
+        $this->validate($request, [
+            'name' => 'required|string|max:255|unique:regions,name,NULL,id,parent_id',
+            'slug' => 'required|string|max:255|unique:regions,slug,NULL,id,parent_id',
+            'parent' => 'nullable|exists:regions,id',
+        ]);
 
-        return redirect()->route('admin.users.index');
+        $region = Region::create([
+            'name' => $request['name'],
+            'slug' => $request['slug'],
+            'parent_id' => $request['parent'],
+        ]);
+
+        return redirect()->route('admin.regions.show', $region);
     }
 
-    public function verify(User $user)
+    public function show(Region $region)
     {
-        $this->register->verify($user->id);
+        $regions = Region::where('parent_id', $region->id)->orderBy('name')->get();
+        return view('admin.regions.show', compact('region', 'regions'));
+    }
 
-        return redirect()->route('admin.users.show', $user);
+    public function edit(Region $region)
+    {
+        return view('admin.regions.edit', compact('region'));
+    }
+
+    public function update(Request $request, Region $region)
+    {
+        $this->validate($request, [
+            'name' => 'required|string|max:255|unique:regions,name,' . $region->id . ',id,parent_id,' . $region->parent_id,
+            'slug' => 'required|string|max:255|unique:regions,slug,' . $region->id . ',id,parent_id,' . $region->parent_id,
+        ]);
+
+        $region->update([
+            'name' => $request['name'],
+            'slug' => $request['slug'],
+        ]);
+
+        return redirect()->route('admin.regions.show', $region);
+    }
+
+    public function destroy(Region $region)
+    {
+        $region->delete();
+
+        return redirect()->route('admin.regions.index');
     }
 }
